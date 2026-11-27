@@ -1,0 +1,171 @@
+name: Build CozyRead X55 (ROCKNIX ARM64)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  build-x55-rocknix:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install project dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
+          else
+            npm install --no-audit --no-fund || npm install --no-audit --no-fund --legacy-peer-deps
+          fi
+
+      - name: Build CozyRead web bundle
+        run: npm run build
+
+      - name: Install ARM64 Electron runtime libraries for ROCKNIX bundling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-0 \
+            libnss3 \
+            libnspr4 \
+            libatk1.0-0 \
+            libatk-bridge2.0-0 \
+            libcups2 \
+            libdrm2 \
+            libxkbcommon0 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxfixes3 \
+            libxrandr2 \
+            libgbm1 \
+            libpango-1.0-0 \
+            libcairo2 \
+            libatspi2.0-0 \
+            libxshmfence1 \
+            libwayland-client0 \
+            libwayland-cursor0 \
+            libwayland-egl1 \
+            zip
+          sudo apt-get install -y --no-install-recommends libasound2t64 || sudo apt-get install -y --no-install-recommends libasound2
+
+      - name: Stage and package ARM64 Electron app
+        run: |
+          STAGE_DIR="/tmp/cozyread-stage"
+          OUT_DIR="/tmp/cozyread-out"
+          rm -rf "$STAGE_DIR" "$OUT_DIR"
+          mkdir -p "$STAGE_DIR" "$OUT_DIR"
+
+          cp -r dist electron "$STAGE_DIR/"
+          node -e '
+            const pkg = require("./package.json");
+            const fs = require("fs");
+            const outPkg = {
+              name: "cozyread",
+              productName: "CozyRead",
+              version: "1.0.0",
+              type: "module",
+              main: "electron/main.mjs",
+              dependencies: {
+                jszip: pkg.dependencies.jszip
+              }
+            };
+            fs.writeFileSync("/tmp/cozyread-stage/package.json", JSON.stringify(outPkg, null, 2));
+          '
+          npm install --prefix "$STAGE_DIR" --omit=dev --no-audit --no-fund
+
+          npx --yes @electron/packager "$STAGE_DIR" CozyRead \
+            --platform=linux \
+            --arch=arm64 \
+            --executable-name=cozyread \
+            --out="$OUT_DIR" \
+            --overwrite \
+            --asar
+
+      - name: Bundle ROCKNIX shared libraries and assemble X55 Port ZIP
+        run: |
+          PACKED_DIR="/tmp/cozyread-out/CozyRead-linux-arm64"
+          RELEASE_DIR="/tmp/CozyRead-X55-ROCKNIX"
+          rm -rf "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR/cozyread/libs" "$RELEASE_DIR/cozyread/data" "$RELEASE_DIR/cozyread/cache/thumbs"
+
+          cp -a "$PACKED_DIR/." "$RELEASE_DIR/cozyread/"
+          cp rocknix/CozyRead.sh "$RELEASE_DIR/CozyRead.sh"
+          sed -i 's/\r$//' "$RELEASE_DIR/CozyRead.sh"
+          chmod +x "$RELEASE_DIR/CozyRead.sh" "$RELEASE_DIR/cozyread/cozyread"
+
+          # Keep only English & Vietnamese locale paks to save SD card space
+          if [ -d "$RELEASE_DIR/cozyread/locales" ]; then
+            find "$RELEASE_DIR/cozyread/locales" -type f ! -name 'en-US.pak' ! -name 'vi.pak' -delete
+          fi
+
+          # Copy required userland shared libraries while letting ROCKNIX supply kernel/GPU/Wayland/DRM drivers
+          collect_libs() {
+            ldd "$1" 2>/dev/null | awk '/=> \//{print $3}' | while read -r lib; do
+              [ -f "$lib" ] || continue
+              base="$(basename "$lib")"
+              case "$base" in
+                libc.so*|libm.so*|libdl.so*|libpthread.so*|librt.so*|ld-linux*|libstdc++.so*|libgcc_s.so*|libresolv.so*|libutil.so*|libdrm*|libgbm*|libEGL*|libGLES*|libGL.so*|libGLX*|libGLdispatch*|libwayland-*|libvulkan*|libudev*|libsystemd*)
+                  continue
+                  ;;
+              esac
+              if [ ! -f "$RELEASE_DIR/cozyread/libs/$base" ]; then
+                cp -L "$lib" "$RELEASE_DIR/cozyread/libs/$base"
+              fi
+            done
+          }
+
+          collect_libs "$RELEASE_DIR/cozyread/cozyread"
+          for sofile in "$RELEASE_DIR/cozyread/"*.so*; do
+            if [ -f "$sofile" ]; then
+              collect_libs "$sofile"
+            fi
+          done
+          for syslib in libgtk-3.so.0 libgdk-3.so.0 libasound.so.2 libnss3.so libxshmfence.so.1; do
+            found="$(ldconfig -p | awk -v name="$syslib" '$1 == name {print $NF; exit}')"
+            if [ -n "$found" ] && [ -f "$found" ]; then
+              cp -Ln "$found" "$RELEASE_DIR/cozyread/libs/$(basename "$found")" || true
+              collect_libs "$found"
+            fi
+          done
+
+          # Quick structural sanity check before zipping
+          test -x "$RELEASE_DIR/cozyread/cozyread"
+          test -f "$RELEASE_DIR/cozyread/resources/app.asar"
+          bash -n "$RELEASE_DIR/CozyRead.sh"
+          node --check electron/main.mjs
+
+          cat << 'EOF' > "$RELEASE_DIR/HUONG_DAN_CAI_DAT.txt"
+          HUONG DAN CAI DAT COZYREAD LEN POWKIDDY X55 (ROCKNIX)
+          ====================================================
+          1. Giai nen file ZIP nay ra may tinh.
+          2. Cam the nho (SD Card) cua X55 vao may tinh, mo thu muc: roms/ports/
+          3. Chep CA HAI muc sau vao roms/ports/:
+             - CozyRead.sh
+             - Thu muc cozyread/
+          4. Tao hoac mo thu muc roms/books/ tren the nho va chep sach (.epub, .cbz, .pdf, .txt) vao do.
+             (Co the chia thu muc con nhu: Van Hoc, Truyen Tranh, Ky Nang... app se tu nhan thanh Tab!)
+          5. Gan the nho vao X55 -> vao muc Ports -> mo CozyRead!
+          EOF
+
+          cd "$RELEASE_DIR"
+          zip -r -q "${GITHUB_WORKSPACE}/CozyRead-X55-ROCKNIX.zip" CozyRead.sh cozyread HUONG_DAN_CAI_DAT.txt
+
+      - name: Upload CozyRead-X55-ROCKNIX.zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CozyRead-X55-ROCKNIX
+          path: CozyRead-X55-ROCKNIX.zip
+          retention-days: 30
