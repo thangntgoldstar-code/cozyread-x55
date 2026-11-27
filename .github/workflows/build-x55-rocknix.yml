@@ -86,9 +86,13 @@ jobs:
           '
           npm install --prefix "$STAGE_DIR" --omit=dev --no-audit --no-fund
 
+          ELECTRON_VER="$(npm view electron version)"
+          echo "Packaging Electron v${ELECTRON_VER} (linux/arm64)..."
+
           npx --yes @electron/packager "$STAGE_DIR" CozyRead \
             --platform=linux \
             --arch=arm64 \
+            --electron-version="$ELECTRON_VER" \
             --executable-name=cozyread \
             --out="$OUT_DIR" \
             --overwrite \
@@ -161,7 +165,7 @@ jobs:
           EOF
 
           cd "$RELEASE_DIR"
-          zip -r -q "${GITHUB_WORKSPACE}/CozyRead-X55-ROCKNIX.zip" CozyRead.sh cozyread HUONG_DAN_CAI_DAT.txt
+          zip -y -r -q "${GITHUB_WORKSPACE}/CozyRead-X55-ROCKNIX.zip" CozyRead.sh cozyread HUONG_DAN_CAI_DAT.txt
 
       - name: Upload CozyRead-X55-ROCKNIX.zip artifact
         uses: actions/upload-artifact@v4
