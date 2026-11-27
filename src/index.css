@@ -1,0 +1,262 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: "Plus Jakarta Sans", "Noto Sans", "DejaVu Sans", "Liberation Sans", system-ui, -apple-system, sans-serif;
+  }
+}
+
+.font-display {
+  font-family: "Fraunces", "Noto Serif", "DejaVu Serif", Georgia, serif;
+}
+
+.font-reader-serif {
+  font-family: "Literata", "Noto Serif", "DejaVu Serif", "Liberation Serif", Georgia, serif;
+}
+
+.font-reader-sans {
+  font-family: "Plus Jakarta Sans", "Noto Sans", "DejaVu Sans", "Liberation Sans", system-ui, sans-serif;
+}
+
+.font-mono-hud {
+  font-family: "JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.perspective-1000 {
+  perspective: 1100px;
+}
+
+.perspective-1400 {
+  perspective: 1400px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Crisp glossy book floor reflection mask */
+.floor-reflection {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.28) 45%,
+    transparent 92%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.28) 45%,
+    transparent 92%
+  );
+}
+
+/* Page Curl 3D keyframe animations — always fade to opacity 0 so no overlay ever lingers */
+@keyframes pageCurlNext {
+  0% {
+    transform: perspective(1600px) rotateY(0deg);
+    opacity: 0.92;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.25);
+  }
+  50% {
+    transform: perspective(1600px) rotateY(-92deg) skewY(-2deg) scaleX(0.95);
+    opacity: 0.75;
+    box-shadow: -28px 0 42px rgba(0, 0, 0, 0.42);
+  }
+  100% {
+    transform: perspective(1600px) rotateY(-178deg) scaleX(0.9);
+    opacity: 0;
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes pageCurlPrev {
+  0% {
+    transform: perspective(1600px) rotateY(-165deg) scaleX(0.92);
+    opacity: 0.35;
+  }
+  50% {
+    transform: perspective(1600px) rotateY(-78deg) skewY(2deg) scaleX(0.96);
+    opacity: 0.8;
+    box-shadow: 24px 0 38px rgba(0, 0, 0, 0.35);
+  }
+  100% {
+    transform: perspective(1600px) rotateY(0deg);
+    opacity: 0;
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+}
+
+.animate-page-curl-next {
+  transform-origin: left center;
+  animation: pageCurlNext 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-page-curl-prev {
+  transform-origin: left center;
+  animation: pageCurlPrev 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-page-fade {
+  animation: pageFadeIn 300ms ease-out forwards;
+}
+
+@keyframes pageSlideNext {
+  0% {
+    transform: translateX(48px);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pageSlidePrev {
+  0% {
+    transform: translateX(-48px);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-page-slide-next {
+  animation: pageSlideNext 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-page-slide-prev {
+  animation: pageSlidePrev 240ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes backdropFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.93) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes libraryViewEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes toastPopIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tabContentFade {
+  0% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bookOpenStageFade {
+  0% {
+    opacity: 0.92;
+  }
+  58% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes bookOpenCoverZoomFlip {
+  0% {
+    opacity: 0.92;
+    transform: perspective(1200px) translateY(10px) scale(0.36) rotateY(0deg);
+  }
+  42% {
+    opacity: 1;
+    transform: perspective(1200px) translateY(0px) scale(1.06) rotateY(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: perspective(1200px) translateX(-18%) scale(1.16) rotateY(-102deg);
+  }
+}
+
+.animate-backdrop-in {
+  animation: backdropFadeIn 180ms ease-out forwards;
+}
+
+.animate-modal-pop {
+  animation: modalPopIn 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-library-view {
+  animation: libraryViewEnter 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-toast-in {
+  animation: toastPopIn 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-tab-fade {
+  animation: tabContentFade 160ms ease-out forwards;
+}
+
+.animate-book-open-backdrop {
+  animation: bookOpenStageFade 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-book-open-cover {
+  transform-origin: left center;
+  animation: bookOpenCoverZoomFlip 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+

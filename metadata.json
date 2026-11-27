@@ -1,0 +1,6 @@
+{
+  "name": "X55 CozyRead — ROCKNIX E-Reader Simulator",
+  "description": "Mô phỏng giao diện và hiệu ứng cho ứng dụng đọc sách Native trên máy Powkiddy X55 chạy ROCKNIX với 8 chế độ thư viện 2D/3D, điều khiển 100% phím vật lý và hiệu ứng lật trang.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
